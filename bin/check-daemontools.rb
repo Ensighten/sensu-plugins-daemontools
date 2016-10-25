@@ -50,9 +50,11 @@ class CheckDaemontools < Sensu::Plugin::Check::CLI
         else
             ok "#{service_path}: ok (up #{secs} secs, pid #{pid})"
         end
-    else
+    elif is_service_down?(service_status_text)
         secs = parse_down_service(service_status_text)
         critical "#{service_path}: down (#{secs} seconds)"
+    else
+        unknown "#{service_path}: unknown service status (#{service_status_text.strip})"
     end
   end
 
@@ -66,6 +68,11 @@ class CheckDaemontools < Sensu::Plugin::Check::CLI
     return match != nil
   end
 
+  def is_service_down?(service_status_text)
+    match = service_status_text.match(SVSTAT_DOWN_REGEX)
+    return match != nil
+  end
+
   def parse_running_service(service_status_text)
     matchdata = service_status_text.match(SVSTAT_UP_REGEX)
     pid = matchdata[1].to_i  # pid 12345780
@@ -75,6 +82,9 @@ class CheckDaemontools < Sensu::Plugin::Check::CLI
 
   def parse_down_service(service_status_text)
     matchdata = service_status_text.match(SVSTAT_DOWN_REGEX)
+    puts matchdata
+    puts service_status_text
+    puts SVSTAT_DOWN_REGEX
     secs = matchdata[1].to_i  # 1234 seconds
     return secs
   end
